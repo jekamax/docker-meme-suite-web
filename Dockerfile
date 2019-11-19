@@ -44,7 +44,7 @@ RUN wget https://downloads.sourceforge.net/project/opaltoolkit/opal2-core-java/2
 	ant install
     
 
-#FIX XALAN
+#FIX XALAN -- opal suite 2.5 has broken xalab jar
 RUN wget http://mirror.linux-ia64.org/apache/xalan/xalan-j/binaries/xalan-j_2_7_2-bin.tar.gz && \
     tar -zxf xalan-j_2_7_2-bin.tar.gz && \
     cd xalan-j_2_7_2 && \
@@ -66,48 +66,48 @@ RUN export PERL_MM_USE_DEFAULT=1 && \
     perl -MCPAN -e 'install XML::Compile::WSDL11' && \
     perl -MCPAN -e 'install XML::Compile::Transport::SOAPHTTP'
 
-ENV MEME_HOST http://localhost:8080/opal2/meme
-ENV OPAL_URL http://localhost:8080/opal2
-
-
-
 RUN mkdir /opt/memedist && \
 	cd /opt/memedist && \
     wget http://meme-suite.org/meme-software/${meme_version}/meme-${meme_version}.tar.gz && \
     tar zxvf meme-${meme_version}.tar.gz --strip-components=1 && \
-    rm -fv meme-${meme_version}.tar.gz && \
+    rm -fv meme-${meme_version}.tar.gz
 	
+ENV MEME_HOST http://localhost:8080/opal2
+ENV OPAL_URL http://localhost:8080/opal2
+
 RUN cd /opt/memedist && \
     ./configure --prefix=/opt/meme --enable-build-libxml2 --enable-build-libxslt --with-url=${MEME_HOST} --enable-webservice=/opt/opal/deploy --enable-web=${OPAL_URL} && \
     make && \
 	make install && \
 	cd .. && \
 	rm -rf /opt/memedist
-	
-RUN mkdir /opt/dbdist
-WORKDIR /opt/dbdist
 
-#RUN wget http://meme-suite.org/meme-software/Databases/motifs/motif_databases.12.19.tgz
-#RUN tar xzf motif_databases.X.tgz && \
-#	mv motif_databases /motif_databases
-#RUN wget http://meme-suite.org/meme-software/Databases/gomo/gomo_databases.3.2.tgz
-#RUN wget http://meme-suite.org/meme-software/Databases/tgene/tgene_databases.1.0.tgz
+ENV DB_LOC /opt/meme/db	
+
+#RUN mkdir /opt/dbdist && \
+#    cd /opt/dbdist && \
+#    wget http://meme-suite.org/meme-software/Databases/motifs/motif_databases.12.19.tgz && \
+#    tar xzf motif_databases.12.19.tgz && \
+#    mv motif_databases ${DB_LOC}
+    
+#RUN	cd /opt/dbdist && \
+#    wget http://meme-suite.org/meme-software/Databases/gomo/gomo_databases.3.2.tgz && \
+#	tar xzf gomo_databases.3.2.tgz && \
+#    mv gomo_databases ${DB_LOC}
+    
+#RUN	cd /opt/dbdist && \
+#    wget http://meme-suite.org/meme-software/Databases/tgene/tgene_databases.1.0.tgz && \
+#	tar xzf tgene_databases.1.0.tgz && \
+#    mv tgene_databases ${DB_LOC} && \
+#	cd / && \
+#	rm -rf /opt/dbdist
 	
 ENV PATH="/opt/meme/bin:${PATH}"
-
-#RUN adduser --disabled-password --gecos '' docker
-
-#RUN adduser docker sudo
-
-#RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-#USER docker
-#CMD /bin/bash
-#WORKDIR /home/docker
-
+RUN groupadd -r meme && useradd --no-log-init -r -g meme meme && \
+    chown -R meme:meme /opt/meme && \
+	chown -R meme:meme /opt/opal && \
+	chown -R meme:meme ${CATALINA_HOME}
+	
+USER meme
 EXPOSE 8080
 CMD ${CATALINA_HOME}/bin/catalina.sh run 
-
-
-
-
-
