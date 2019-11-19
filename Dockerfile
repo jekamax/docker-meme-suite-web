@@ -72,8 +72,8 @@ RUN mkdir /opt/memedist && \
     tar zxvf meme-${meme_version}.tar.gz --strip-components=1 && \
     rm -fv meme-${meme_version}.tar.gz
 	
-ENV MEME_HOST http://localhost:8080/opal2
-ENV OPAL_URL http://localhost:8080/opal2
+ENV MEME_HOST http://localhost:8080/meme_5.1.0
+ENV OPAL_URL http://localhost:8080/opal2/services
 
 RUN cd /opt/memedist && \
     ./configure --prefix=/opt/meme --enable-build-libxml2 --enable-build-libxslt --with-url=${MEME_HOST} --enable-webservice=/opt/opal/deploy --enable-web=${OPAL_URL} && \
@@ -102,7 +102,8 @@ ENV DB_LOC /opt/meme/db
 #	cd / && \
 #	rm -rf /opt/dbdist
 	
-ENV PATH="/opt/meme/bin:${PATH}"
+ENV PATH="/opt/meme/bin:/opt/meme/libexec/meme-5.1.0/:${PATH}"
+
 RUN groupadd -r meme && useradd --no-log-init -r -g meme meme && \
     chown -R meme:meme /opt/meme && \
 	chown -R meme:meme /opt/opal && \
