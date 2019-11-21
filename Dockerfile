@@ -2,8 +2,6 @@ FROM tomcat:8.5
 
 ENV meme_version 5.1.0
 
-ENV ANT_VERSION 1.9.14
-
 RUN apt-get update && apt-get install -y \
     libopenmpi-dev \
     openmpi-bin \
@@ -26,89 +24,80 @@ RUN apt-get update && apt-get install -y \
 	make
 	
 	
-ENV ANT_HOME /opt/ant	
+ENV ANT_HOME /opt/ant
 WORKDIR ${ANT_HOME}
-RUN wget http://apache-mirror.rbc.ru/pub/apache/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz && \
-    tar -xf apache-ant-${ANT_VERSION}-bin.tar.gz --strip-components=1 && \
-    rm apache-ant-${ANT_VERSION}-bin.tar.gz
+RUN curl -L -o dist.tar.gz --retry 3 http://apache-mirror.rbc.ru/pub/apache/ant/binaries/apache-ant-1.9.14-bin.tar.gz && \
+    tar -zxf dist.tar.gz --strip-components=1 && \
+    rm dist.tar.gz
 ENV PATH ${PATH}:${ANT_HOME}/bin
 
 
-
-ENV OPAL_DIST /opt/opal
-WORKDIR ${OPAL_DIST}
-RUN wget https://downloads.sourceforge.net/project/opaltoolkit/opal2-core-java/2.5/opal-ws-2.5.tar.gz && \
-    tar -xf opal-ws-2.5.tar.gz --strip-components=1 && \
-    rm opal-ws-2.5.tar.gz && \
-	sed -ibak  "s@/path/to/catalina_home@$CATALINA_HOME@" build.properties && \
+WORKDIR /tmp/opaldist
+RUN curl -L -o dist.tar.gz https://downloads.sourceforge.net/project/opaltoolkit/opal2-core-java/2.5/opal-ws-2.5.tar.gz && \
+    tar -zxf dist.tar.gz --strip-components=1 && \
+    rm dist.tar.gz && \
+	sed -ibak  "s@/path/to/catalina_home@${CATALINA_HOME}@" build.properties && \
+	sed -ibak "s@path=deploy@path=${CATALINA_HOME}/opaldeploy@" etc/opal.properties && \
 	ant install
-    
 
-#FIX XALAN -- opal suite 2.5 has broken xalab jar
-RUN wget http://mirror.linux-ia64.org/apache/xalan/xalan-j/binaries/xalan-j_2_7_2-bin.tar.gz && \
-    tar -zxf xalan-j_2_7_2-bin.tar.gz && \
-    cd xalan-j_2_7_2 && \
-    cp *.jar ${CATALINA_HOME}/lib && \
-    rm -f *.jar ${CATALINA_HOME}/lib/xalan-2.7.0.jar
-	
+#There is damaged version of xalan in opal-2.5 distribution
+WORKDIR /tmp/xalandist	
+RUN curl -L -o dist.tar.gz --retry 3 http://mirror.linux-ia64.org/apache/xalan/xalan-j/binaries/xalan-j_2_7_2-bin.tar.gz && \
+    tar -zxf dist.tar.gz --strip-components=1 && \
+	rm dist.tar.gz && \
+    cp ./*.jar "${CATALINA_HOME}/lib" && \
+    rm -f ./*.jar "${CATALINA_HOME}/lib/xalan-2.7.0.jar"
+
+
+WORKDIR /tmp/memedist
+RUN curl -L -o dist.tar.gz --retry 3 http://meme-suite.org/meme-software/${meme_version}/meme-${meme_version}.tar.gz && \
+    tar -zxf dist.tar.gz --strip-components=1 && \
+    rm dist.tar.gz
+
 RUN export PERL_MM_USE_DEFAULT=1 && \
-    perl -MCPAN -e 'install Log::Log4perl' && \
-    perl -MCPAN -e 'install Math::CDF' && \
-    perl -MCPAN -e 'install CGI' && \
-    perl -MCPAN -e 'install HTML::PullParser' && \
-    perl -MCPAN -e 'install HTML::Template' && \
-    perl -MCPAN -e 'install XML::Simple' && \
-    perl -MCPAN -e 'install XML::Parser::Expat' && \
-    perl -MCPAN -e 'install XML::LibXML' && \
-    perl -MCPAN -e 'install XML::LibXML::Simple' && \
-    perl -MCPAN -e 'install XML::Compile' && \
-    perl -MCPAN -e 'install XML::Compile::SOAP11' && \
-    perl -MCPAN -e 'install XML::Compile::WSDL11' && \
-    perl -MCPAN -e 'install XML::Compile::Transport::SOAPHTTP'
-
-RUN mkdir /opt/memedist && \
-	cd /opt/memedist && \
-    wget http://meme-suite.org/meme-software/${meme_version}/meme-${meme_version}.tar.gz && \
-    tar zxvf meme-${meme_version}.tar.gz --strip-components=1 && \
-    rm -fv meme-${meme_version}.tar.gz
+    for dep in $(perl scripts/dependencies.pl | sed -n 's/^\(.*\) missing.*$/\1/p') ; do echo  "install $dep" ; cpan "$dep" ; done
 	
-ENV MEME_HOST http://localhost:8080/meme_5.1.0
-ENV OPAL_URL http://localhost:8080/opal2/services
 
-RUN cd /opt/memedist && \
-    ./configure --prefix=/opt/meme --enable-build-libxml2 --enable-build-libxslt --with-url=${MEME_HOST} --enable-webservice=/opt/opal/deploy --enable-web=${OPAL_URL} && \
+# SUDDENLY Meme generates iframes with absolute urls to opal
+# Which is hidden in the container :(
+# So to do proper isolation we must put resolwable meme url in iframes.
+# Lets apply a little patch to do so.
+COPY url-patch.diff .
+RUN patch -p0 < url-patch.diff
+
+RUN ./configure --prefix=/opt/meme --enable-build-libxml2 \
+                                   --enable-build-libxslt \
+								   --with-url=/ \
+								   --enable-webservice=${CATALINA_HOME}/opaldeploy \
+								   --enable-web=http://localhost:8080/opal2/services && \
     make && \
-	make install && \
-	cd .. && \
-	rm -rf /opt/memedist
+	make install 
 
-ENV DB_LOC /opt/meme/db	
 
-#RUN mkdir /opt/dbdist && \
-#    cd /opt/dbdist && \
-#    wget http://meme-suite.org/meme-software/Databases/motifs/motif_databases.12.19.tgz && \
-#    tar xzf motif_databases.12.19.tgz && \
-#    mv motif_databases ${DB_LOC}
-    
-#RUN	cd /opt/dbdist && \
-#    wget http://meme-suite.org/meme-software/Databases/gomo/gomo_databases.3.2.tgz && \
-#	tar xzf gomo_databases.3.2.tgz && \
-#    mv gomo_databases ${DB_LOC}
-    
-#RUN	cd /opt/dbdist && \
-#    wget http://meme-suite.org/meme-software/Databases/tgene/tgene_databases.1.0.tgz && \
-#	tar xzf tgene_databases.1.0.tgz && \
-#    mv tgene_databases ${DB_LOC} && \
-#	cd / && \
-#	rm -rf /opt/dbdist
-	
-ENV PATH="/opt/meme/bin:/opt/meme/libexec/meme-5.1.0/:${PATH}"
+
+WORKDIR ${CATALINA_HOME}/webapps
+RUN unzip -d meme_${meme_version} meme_${meme_version}.war && \
+    rm meme_${meme_version}.war
+
+WORKDIR /home/meme
+COPY MemeSuite.properties .
+COPY entrypoint.sh .
+
 
 RUN groupadd -r meme && useradd --no-log-init -r -g meme meme && \
-    chown -R meme:meme /opt/meme && \
-	chown -R meme:meme /opt/opal && \
-	chown -R meme:meme ${CATALINA_HOME}
-	
+    chown -R meme:meme /tmp/*dist && \
+	chown -R meme:meme /opt/meme && \
+	chown -R meme:meme /home/meme && \
+	chown -R meme:meme ${CATALINA_HOME}	
+
+EXPOSE 8080	
 USER meme
-EXPOSE 8080
-CMD ${CATALINA_HOME}/bin/catalina.sh run 
+
+#RUN cd /tmp/memedist && \
+#    make test	
+
+RUN rm -rf /tmp/*dist 
+	
+ENV PATH="/opt/meme/bin:/opt/meme/libexec/meme-5.1.0/:${PATH}"
+ENTRYPOINT [ "/home/meme/entrypoint.sh" ]
+CMD [ "startweb", "/" ]

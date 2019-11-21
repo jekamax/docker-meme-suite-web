@@ -1,0 +1,50 @@
+diff -u website/src/au/edu/uq/imb/memesuite/servlet.orig/JobStatus.java website/src/au/edu/uq/imb/memesuite/servlet/JobStatus.java
+--- website/src/au/edu/uq/imb/memesuite/servlet.orig/JobStatus.java	2019-11-21 02:13:12.041373200 +0300
++++ website/src/au/edu/uq/imb/memesuite/servlet/JobStatus.java	2019-11-21 03:35:42.494764000 +0300
+@@ -249,6 +249,11 @@
+       out.println("</status>");
+       if (urlExists(url)) {
+         out.print("<url>");
++        String siteUrl = msp.getSiteURL(); 
++        if (siteUrl.endsWith("/")) {
++            siteUrl = siteUrl.substring(0, siteUrl.length()-1);
++        }
++        url = siteUrl + new URL(url).getPath();
+         out.print(url);
+         out.println("</url>");
+       }
+@@ -307,6 +312,11 @@
+         String fullURL = jobUrl(status);
+         if (urlExists(fullURL)) {
+           // note we randomize the ID so safari doesn't cache the content
++          String siteUrl = msp.getSiteURL(); 
++          if (siteUrl.endsWith("/")) {
++            siteUrl = siteUrl.substring(0, siteUrl.length()-1);
++          }
++          fullURL = siteUrl + new URL(fullURL).getPath();
+           page.getSub("preview").set("url", fullURL).set("id", "IF_" + System.currentTimeMillis());
+         } else {
+           page.set("details", "expanded");
+diff -u website/src/au/edu/uq/imb/memesuite/servlet.orig/Tomtom.java website/src/au/edu/uq/imb/memesuite/servlet/Tomtom.java
+--- website/src/au/edu/uq/imb/memesuite/servlet.orig/Tomtom.java	2019-10-07 04:48:58.000000000 +0300
++++ website/src/au/edu/uq/imb/memesuite/servlet/Tomtom.java	2019-11-21 03:43:18.540552200 +0300
+@@ -392,15 +392,11 @@
+         if (!result.isFile()) {
+           throw new ServletException("Tomtom did not create an index.html file");
+         }
+-	      URL siteURL = new URL(msp.getSiteURL()); 
+-        String outputURLString = siteURL.getProtocol() +"://" + siteURL.getHost();
+-        int port = siteURL.getPort();
+-        if (port > 0) {
+-          // The site URL contains an explicit port value
+-          // so repeat that here.
+-          outputURLString = outputURLString + ":" + Integer.toString(port);
++	    String siteUrl = msp.getSiteURL(); 
++        if (siteUrl.endsWith("/")) {
++            siteUrl = siteUrl.substring(0, siteUrl.length()-1);
+         }
+-        outputURLString = outputURLString + "/opal-jobs/" + jobName;
++        String outputURLString = siteUrl + "/opal-jobs/" + jobName;
+         response.sendRedirect(outputURLString );
+       } finally {
+         tracker.setFinished();
