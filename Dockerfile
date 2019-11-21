@@ -80,9 +80,9 @@ RUN unzip -d meme_${meme_version} meme_${meme_version}.war && \
     rm meme_${meme_version}.war
 
 WORKDIR /home/meme
+
 COPY MemeSuite.properties .
 COPY entrypoint.sh .
-
 
 RUN groupadd -r meme && useradd --no-log-init -r -g meme meme && \
     chown -R meme:meme /tmp/*dist && \
@@ -97,7 +97,10 @@ USER meme
 #    make test	
 
 RUN rm -rf /tmp/*dist 
-	
+
+RUN chmod +x entrypoint.sh	
+RUN chmod +w MemeSuite.properties	
+
 ENV PATH="/opt/meme/bin:/opt/meme/libexec/meme-5.1.0/:${PATH}"
 ENTRYPOINT [ "/home/meme/entrypoint.sh" ]
 CMD [ "startweb", "/" ]
