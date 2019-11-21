@@ -11,7 +11,7 @@ Docker image to easy run [The MEME Suite](http://meme-suite.org) in web mode.
 
 ## Usage
 
-### To run MeMe in web mode run the container
+### To start MeMe web service run the container
 
 ```shell
 $docker run -p [hostIp]:<hostPort>:8080 eugenemaxim/docker-meme-suite-web:latest webstart [endpoint]
@@ -36,6 +36,12 @@ docker run -v /abspath/to/yourdata:/home/meme -it opalhome meme mydata.fa
 
 - databases download
 - comfortable work with volumes in cmdline mode
+- Reduce image size
+- Reduce build time
+
+## Acknowledgement
+
+Meme Suite is free for [educational, research and non-profit purposes](//meme-suite.org/doc/copyright.html)
 
 ---
 
