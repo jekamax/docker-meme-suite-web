@@ -44,8 +44,8 @@ docker run -v /abspath/to/yourdata:/home/meme -it opalhome meme mydata.fa
 Meme Suite is free for [educational, research and non-profit purposes](//meme-suite.org/doc/copyright.html)
 
 ---
-
-### All tests passed
+![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/eugenemaxim/docker-meme-suite-web?label=dockerhub%20build)
+All tests passed
 
 ```shell
 ============================================================================
