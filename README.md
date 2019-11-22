@@ -45,6 +45,7 @@ Meme Suite is free for [educational, research and non-profit purposes](//meme-su
 
 ---
 ![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/eugenemaxim/docker-meme-suite-web?label=dockerhub%20build)
+
 All tests passed
 
 ```shell
