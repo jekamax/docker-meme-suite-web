@@ -1,4 +1,4 @@
-# docker-meme-suite-web
+# docker MEME Suite
 
 Docker image to easy run [The MEME Suite](http://meme-suite.org) in web mode.
 
