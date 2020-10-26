@@ -18,7 +18,7 @@ $docker run -p [hostIp]:<hostPort>:8080 eugenemaxim/docker-meme-suite-web:latest
 ```
 
 - hostIp, hostPort - ip and port of the host [read docs](//docs.docker.com/engine/reference/run/)
-- endpoint - Your MeMe suite endpont. It will be used in jobs email reports and *internally by server (it uses iframes with that endpoint)*. So it must be relative or resolvable from end user environment and point to the container host and port. Default is `"/"`
+- endpoint - Your MeMe suite endpont. It will be used in jobs email reports and *internally by server (it uses iframes with that endpoint)*. So it must be relative or resolveable from end user environment and point to the container host and port. Default is `"/"`
 
 Example:
 
